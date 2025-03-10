@@ -1,0 +1,27 @@
+import React from 'react';
+import { View, StyleSheet} from 'react-native';
+import GameComponent from './GameComponent'; // Adjust the path if necessary
+
+import AnimatedBackground from './AnimatedBackground'; // Adjust the path as needed
+import backgroundImage from './assets/back.jpg';
+import playerImage from './assets/player.png';
+import meteorImage from './assets/meteor.png';
+
+const GameScreen = ({ onGoHome }) => {
+
+  return (
+    <View style={styles.container}>
+        <>
+          <AnimatedBackground backgroundImage={backgroundImage} />
+          <GameComponent playerImage={playerImage} meteorImage={meteorImage} onRestart={onGoHome} />
+        </>
+    
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, overflow: 'hidden' },
+});
+
+export default GameScreen;
