@@ -29,9 +29,13 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
 
   const playerX = useRef(new Animated.Value(screenWidth / 2 - 30)).current;
   const playerPos = useRef(screenWidth / 2 - 30);
-
+  let len = scoreRef.current < 1000
+  ? 5
+  : scoreRef.current < 5000
+    ? 7
+    : 9;
   const meteorPositions = useRef(
-    Array.from({ length: 8 }).map(() =>
+    Array.from({ length: len }).map(() =>
       new Animated.ValueXY({
         x: Math.random() * (screenWidth - 50),
         y: Math.random() * -600,
@@ -101,12 +105,12 @@ useEffect(() => {
           y: -50,
         });
 
-        const duration =
-          scoreRef.current < 1000
-            ? 3000
-            : scoreRef.current < 5000
-              ? 2000
-              : 1500;
+        const duration = 3000;
+          // scoreRef.current < 1000
+          //   ? 3000
+          //   : scoreRef.current < 5000
+          //     ? 2000
+          //     : 1500;
 
         Animated.timing(meteor.y, {
           toValue: screenHeight,
