@@ -1,8 +1,8 @@
-import React, { useState , useEffect} from 'react';
+import React, {Suspense , useState , useEffect} from 'react';
 import { I18nManager } from 'react-native';
 import { View } from 'react-native';
-import HomeScreen from './HomeScreen';
-import GameScreen from './GameScreen';
+const HomeScreen = React.lazy(() => import('./HomeScreen'));
+const GameScreen = React.lazy(() => import('./GameScreen'));
 
 const App = () => {
 
@@ -15,11 +15,13 @@ const App = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      {currentScreen === 'Home' ? (
-        <HomeScreen onStart={() => setCurrentScreen('Game')} />
-      ) : (
-        <GameScreen onGoHome={() => setCurrentScreen('Home')} />
-      )}
+      <Suspense fallback={<Text>Loading Media...</Text>}>
+        {currentScreen === 'Home' ? (
+          <HomeScreen onStart={() => setCurrentScreen('Game')} />
+        ) : (
+          <GameScreen onGoHome={() => setCurrentScreen('Home')} />
+        )}
+      </Suspense>
     </View>
   );
 };

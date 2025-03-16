@@ -1,9 +1,8 @@
-import React from 'react';
+import React ,{ Suspense } from 'react';
 import { View, StyleSheet , StatusBar } from 'react-native';
-// import { StatusBar } from 'expo-status-bar';
-import GameComponent from './GameComponent'; // Adjust the path if necessary
 
-import AnimatedBackground from './AnimatedBackground'; // Adjust the path as needed
+const GameComponent = React.lazy(() => import('./GameComponent'));
+const AnimatedBackground = React.lazy(() => import('./AnimatedBackground'));
 import backgroundImage from './assets/back.jpg';
 import playerImage from './assets/player.png';
 import meteorImage from './assets/meteor.png';
@@ -12,11 +11,11 @@ const GameScreen = ({ onGoHome }) => {
 
   return (
     <View style={styles.container}>
-        <>
-          <AnimatedBackground backgroundImage={backgroundImage} />
-          <GameComponent playerImage={playerImage} meteorImage={meteorImage} onRestart={onGoHome} />
-        </>
-       <StatusBar hidden={true} />
+      <Suspense fallback={<Text>Loading Media...</Text>}>
+        <AnimatedBackground backgroundImage={backgroundImage} />
+        <GameComponent playerImage={playerImage} meteorImage={meteorImage} onRestart={onGoHome} />
+        <StatusBar hidden={true} />
+        </Suspense>
     </View>
   );
 };
