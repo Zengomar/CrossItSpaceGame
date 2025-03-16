@@ -15,7 +15,7 @@ const App = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      <Suspense fallback={<Text>Loading Media...</Text>}>
+      <Suspense fallback={<Text>Loading...</Text>}>
         {currentScreen === 'Home' ? (
           <HomeScreen onStart={() => setCurrentScreen('Game')} />
         ) : (

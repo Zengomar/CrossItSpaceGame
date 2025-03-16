@@ -11,7 +11,7 @@ const GameScreen = ({ onGoHome }) => {
 
   return (
     <View style={styles.container}>
-      <Suspense fallback={<Text>Loading Media...</Text>}>
+      <Suspense fallback={<Text>Loading...</Text>}>
         <AnimatedBackground backgroundImage={backgroundImage} />
         <GameComponent playerImage={playerImage} meteorImage={meteorImage} onRestart={onGoHome} />
         <StatusBar hidden={true} />
