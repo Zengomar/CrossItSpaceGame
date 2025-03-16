@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState , useEffect} from 'react';
+import { I18nManager } from 'react-native';
 import { View } from 'react-native';
 import HomeScreen from './HomeScreen';
 import GameScreen from './GameScreen';
 
 const App = () => {
+
+  useEffect(() => {
+    I18nManager.forceRTL(false);
+    I18nManager.allowRTL(false);
+  }, []);
+
   const [currentScreen, setCurrentScreen] = useState('Home');
 
   return (

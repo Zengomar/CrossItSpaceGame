@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet} from 'react-native';
+import { View, StyleSheet , StatusBar } from 'react-native';
 // import { StatusBar } from 'expo-status-bar';
 import GameComponent from './GameComponent'; // Adjust the path if necessary
 
@@ -16,13 +16,13 @@ const GameScreen = ({ onGoHome }) => {
           <AnimatedBackground backgroundImage={backgroundImage} />
           <GameComponent playerImage={playerImage} meteorImage={meteorImage} onRestart={onGoHome} />
         </>
-        {/* <StatusBar hidden={true} /> */}
+       <StatusBar hidden={true} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, overflow: 'hidden' },
+  container: { flex: 1, overflow: 'hidden' ,direction: 'ltr',},
 });
 
 export default GameScreen;

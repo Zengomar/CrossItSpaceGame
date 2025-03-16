@@ -14,6 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "supportsRTL": false,
       "bundleIdentifier": "com.youssefahmed.js.CrossIt",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -24,7 +25,8 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.youssefahmed.js.CrossIt"
+      "package": "com.youssefahmed.js.CrossIt",
+      "allowRTL": false
     },
     "web": {
       "favicon": "./assets/favicon.ico"
