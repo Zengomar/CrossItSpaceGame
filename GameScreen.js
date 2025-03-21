@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react'
+import React, { Suspense, lazy } from 'react';
 import { View, StyleSheet, StatusBar, Text } from 'react-native';
 
 // Use React.lazy to dynamically import components
@@ -21,14 +21,14 @@ const GameScreen = React.memo(({ onGoHome }) => {
           meteorImage={meteorImage}
           onRestart={onGoHome}
         />
-        <StatusBar hidden={true} />
+        <StatusBar barStyle="light-content" backgroundColor="black" />
       </Suspense>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1, overflow: 'hidden' },
+  container: { flex: 1, overflow: 'hidden', backgroundColor: 'black' },
 });
 
 export default GameScreen;

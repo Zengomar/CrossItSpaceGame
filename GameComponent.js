@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
   Text,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
@@ -90,7 +91,7 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
           toValue: screenHeight,
           duration: duration,
           easing: Easing.linear,
-          useNativeDriver: true,
+          useNativeDriver: false,
         }).start(() => {
           if (!gameOver) {
             animateMeteor(); // Restart the animation for continuous movement
@@ -115,6 +116,12 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
       fadeOutMusic();
       gameOverSound.current.setPositionAsync(0);
       gameOverSound.current.playAsync();
+
+      // Update high score when game is over
+      if (score > highScore) {
+        setHighScore(score);
+        AsyncStorage.setItem('highScore', score.toString());
+      }
     }
   }, [gameOver]);
 
@@ -140,7 +147,12 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
         const dy = meteorYPos - playerYPos;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
+        console.log(`Meteor Position: (${meteorXPos}, ${meteorYPos})`);
+        console.log(`Player Position: (${playerXPos}, ${playerYPos})`);
+        console.log(`Distance: ${distance}`);
+
         if (distance < 50) { // Adjust collision threshold if necessary
+          console.log('Collision detected!');
           explosionSound.current.setPositionAsync(0);
           explosionSound.current.playAsync();
           setHealth((prev) => {
@@ -168,13 +180,6 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
     };
     loadHighScore();
   }, []);
-
-  useEffect(() => {
-    if (score > highScore) {
-      setHighScore(score);
-      AsyncStorage.setItem('highScore', score.toString());
-    }
-  }, [score, highScore]);
 
   const movePlayer = (direction) => {
     if (gameOver) return;
@@ -244,8 +249,8 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, overflow: 'hidden' },
-  meteor: { position: 'absolute', width: 50, height: 50 },
-  player: { position: 'absolute', bottom: '25%', width: 60, height: 80 },
+  meteor: { position: 'absolute', width: 50, height: 50, zIndex: 1 },
+  player: { position: 'absolute', bottom: '25%', width: 60, height: 80, zIndex: 0 },
   controls: { position: 'absolute', bottom: 50, width: '100%', flexDirection: 'row', justifyContent: 'space-around' },
   controlButton: { backgroundColor: 'rgba(255,255,255,0.3)', padding: 20, borderRadius: 10 },
   controlText: { fontSize: 24, color: 'white' },
