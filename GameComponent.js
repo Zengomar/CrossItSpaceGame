@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   View,
   Text,
-  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
@@ -91,7 +90,7 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
           toValue: screenHeight,
           duration: duration,
           easing: Easing.linear,
-          useNativeDriver: false,
+          useNativeDriver: true, // Use native driver for smooth animation
         }).start(() => {
           if (!gameOver) {
             animateMeteor(); // Restart the animation for continuous movement
@@ -137,6 +136,15 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
 
   useEffect(() => {
     if (gameOver) return;
+
+    const meteorListeners = meteorPositions.map((meteor, index) => {
+      const listener = meteor.addListener(({ x, y }) => {
+        meteorPositions[index].x._value = x;
+        meteorPositions[index].y._value = y;
+      });
+      return listener;
+    });
+
     const collisionInterval = setInterval(() => {
       meteorPositions.forEach((meteor) => {
         const playerXPos = playerPos.current + 30; // Adjust for player width
@@ -164,7 +172,12 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
       });
     }, 100);
 
-    return () => clearInterval(collisionInterval);
+    return () => {
+      clearInterval(collisionInterval);
+      meteorListeners.forEach((listener, index) => {
+        meteorPositions[index].removeListener(listener);
+      });
+    };
   }, [meteorPositions, gameOver, playerPos]); // Added playerPos as a dependency
 
   useEffect(() => {
@@ -196,7 +209,7 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
         toValue: newX,
         duration: 100,
         easing: Easing.linear,
-        useNativeDriver: false,
+        useNativeDriver: true, // Use native driver for smooth animation
       }).start();
     });
   };
@@ -225,7 +238,7 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
           style={[styles.meteor, { transform: [{ translateX: meteor.x }, { translateY: meteor.y }], zIndex: 1 }]}
         />
       ))}
-      <Animated.Image source={playerImage} style={[styles.player, { left: playerX, zIndex: 0 }]} />
+      <Animated.Image source={playerImage} style={[styles.player, { transform: [{ translateX: playerX }], zIndex: 0 }]} />
       <View style={styles.controls}>
         <TouchableOpacity onPress={() => movePlayer('left')} style={styles.controlButton}>
           <Text style={styles.controlText}>◀</Text>
@@ -239,8 +252,8 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
       <Text style={styles.highScore}>High Score: {highScore}</Text>
       {gameOver && (
         <View style={styles.overlay}>
-          <TouchableOpacity onPress={handleRestart}><Text>Restart</Text></TouchableOpacity>
-          <TouchableOpacity onPress={onRestart}><Text>Go Home</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.tapToRestart} onPress={handleRestart}><Text style={styles.gameOverText}>Restart</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.goHomeButton} onPress={onRestart}><Text style={styles.goHomeText}>Go Home</Text></TouchableOpacity>
         </View>
       )}
     </View>
@@ -257,16 +270,16 @@ const styles = StyleSheet.create({
   score: { position: 'absolute', top: 20, right: 20, fontSize: 24, fontWeight: 'bold', color: '#ffd700' },
   health: { position: 'absolute', top: 20, left: 20, fontSize: 24, fontWeight: 'bold', color: 'red' },
   highScore: { position: 'absolute', top: 60, right: 20, fontSize: 24, fontWeight: 'bold', color: '#ff8c00' },
-  overlay: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
+  overlay: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'rgba(26, 25, 25, 0.7)', justifyContent: 'center', alignItems: 'center',zIndex: 2 },
   gameOverContainer: { 
     padding: 30, 
     borderRadius: 10, 
     backgroundColor: '#fff', 
     alignItems: 'center'
   },
-  gameOverText: { fontSize: 30, fontWeight: 'bold', color: 'red' },
+  gameOverText: { fontSize: 30, fontWeight: 'bold', color: 'white' },
   finalScore: { fontSize: 24, fontWeight: 'bold', marginTop: 10 },
-  tapToRestart: { marginTop: 10, fontSize: 16, color: 'gray' },
+  tapToRestart: { marginTop: 10, fontSize: 16, fontWeight: 'bold', color: 'white' },
   goHomeButton: { 
     marginTop: 20, 
     backgroundColor: '#007AFF', 
