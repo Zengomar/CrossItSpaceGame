@@ -19,53 +19,37 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
   const [highScore, setHighScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
 
-  // Keep a ref copy of score if needed for immediate access
   const scoreRef = useRef(score);
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
 
-  // Player horizontal position
   const playerX = useRef(new Animated.Value(screenWidth / 2 - 30)).current;
   const playerPos = useRef(screenWidth / 2 - 30);
 
-  // Determine meteor count based on score thresholds.
-  // (If you want dynamic meteor count, consider storing them in state.)
-  let len = score < 1000 ? 5 : score < 5000 ? 7 : 9;
-
-  // Create meteor animated values only once.
-  const meteorPositions = useRef(
-    Array.from({ length: len }).map(() =>
+  const [meteorPositions, setMeteorPositions] = useState(
+    Array.from({ length: 5 }).map(() =>
       new Animated.ValueXY({
         x: Math.random() * (screenWidth - 50),
         y: Math.random() * -600,
       })
     )
-  ).current;
-
-  // We use listeners on the animated values to update positions live
-  const [meteorPositionsState, setMeteorPositionsState] = useState(
-    Array.from({ length: len }, () => ({ x: 0, y: 0 }))
   );
 
   useEffect(() => {
-    const listeners = meteorPositions.map((meteor, index) =>
-      meteor.addListener(({ x, y }) => {
-        setMeteorPositionsState((prev) => {
-          const newState = [...prev];
-          newState[index] = { x, y };
-          return newState;
-        });
-      })
-    );
+    const len = score < 1000 ? 5 : score < 5000 ? 7 : 9;
+    if (meteorPositions.length !== len) {
+      setMeteorPositions(
+        Array.from({ length: len }).map(() =>
+          new Animated.ValueXY({
+            x: Math.random() * (screenWidth - 50),
+            y: Math.random() * -600,
+          })
+        )
+      );
+    }
+  }, [score]);
 
-    return () => {
-      // Remove listeners on cleanup
-      meteorPositions.forEach((meteor) => meteor.removeAllListeners());
-    };
-  }, [meteorPositions]);
-
-  // Audio Setup
   const backgroundMusic = useRef(new Audio.Sound());
   const explosionSound = useRef(new Audio.Sound());
   const gameOverSound = useRef(new Audio.Sound());
@@ -73,16 +57,9 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
   useEffect(() => {
     const loadSounds = async () => {
       try {
-        await backgroundMusic.current.loadAsync(
-          require('./assets/spaceship.mp3'),
-          { isLooping: true }
-        );
-        await explosionSound.current.loadAsync(
-          require('./assets/explosion1.mp3')
-        );
-        await gameOverSound.current.loadAsync(
-          require('./assets/gameover.mp3')
-        );
+        await backgroundMusic.current.loadAsync(require('./assets/spaceship.mp3'), { isLooping: true });
+        await explosionSound.current.loadAsync(require('./assets/explosion1.mp3'));
+        await gameOverSound.current.loadAsync(require('./assets/gameover.mp3'));
         await backgroundMusic.current.playAsync();
       } catch (error) {
         console.error('Error loading sounds:', error);
@@ -97,50 +74,17 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
     };
   }, []);
 
-  // Load high score on startup
-  useEffect(() => {
-    const loadHighScore = async () => {
-      try {
-        const savedHighScore = await AsyncStorage.getItem('highScore');
-        if (savedHighScore !== null) {
-          setHighScore(parseInt(savedHighScore, 10));
-        }
-      } catch (error) {
-        console.error('Failed to load high score:', error);
-      }
-    };
-    loadHighScore();
-  }, []);
-
-  // Save high score when the game is over and the current score beats the previous record
-  useEffect(() => {
-    const updateHighScore = async () => {
-      if (gameOver && score > highScore) {
-        try {
-          await AsyncStorage.setItem('highScore', score.toString());
-          setHighScore(score);
-        } catch (error) {
-          console.error('Failed to save high score:', error);
-        }
-      }
-    };
-    updateHighScore();
-  }, [gameOver, score, highScore]);
-
-  // Animate meteors continuously; adapt speed based on score.
   useEffect(() => {
     if (gameOver) return;
-    meteorPositions.forEach((meteor) => {
+
+    meteorPositions.forEach((meteor, index) => {
       const animateMeteor = () => {
         if (gameOver) return;
-        // Reset position to top with a new random horizontal position.
-        meteor.setValue({
-          x: Math.random() * (screenWidth - 50),
-          y: -50,
-        });
+        const newX = Math.random() * (screenWidth - 50);
+        const newY = -50;
+        meteor.setValue({ x: newX, y: newY });
 
-        // Adjust duration with score thresholds
-        const duration = score < 1000 ? 4000 : score < 5000 ? 3000 : 2000;
+        const duration = 4000; // Set duration to always be 4000 milliseconds
 
         Animated.timing(meteor.y, {
           toValue: screenHeight,
@@ -148,24 +92,21 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
           easing: Easing.linear,
           useNativeDriver: true,
         }).start(() => {
-          // Increment score as a meteor completes its travel
-          setScore((prevScore) => prevScore + 10);
           if (!gameOver) {
-            animateMeteor();
+            animateMeteor(); // Restart the animation for continuous movement
           }
         });
       };
       animateMeteor();
     });
-  }, [meteorPositions, gameOver, score]);
+  }, [meteorPositions, gameOver]);
 
-  // Fade out background music and play game-over sound when game ends.
   useEffect(() => {
     if (gameOver) {
       const fadeOutMusic = async () => {
         let volume = 1.0;
         while (volume > 0) {
-          volume = Math.max(0, volume - 0.1);
+          volume -= 0.1;
           await backgroundMusic.current.setVolumeAsync(volume);
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
@@ -177,25 +118,34 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
     }
   }, [gameOver]);
 
-  // Collision detection via an interval
+  useEffect(() => {
+    if (gameOver) return;
+
+    const scoreInterval = setInterval(() => {
+      setScore((prevScore) => prevScore + 1);
+    }, 1000 / 30);
+
+    return () => clearInterval(scoreInterval);
+  }, [gameOver, score]); // Added score as a dependency
+
   useEffect(() => {
     if (gameOver) return;
     const collisionInterval = setInterval(() => {
-      meteorPositionsState.forEach((meteor) => {
-        // Compute distance from meteor to player.
-        const dx = meteor.x - (playerPos.current + 30);
-        // Player is positioned 25% from the bottom; adjust offset (here 40 is an experimental offset)
-        const dy = meteor.y - (screenHeight * 0.75 + 40);
+      meteorPositions.forEach((meteor) => {
+        const playerXPos = playerPos.current + 30; // Adjust for player width
+        const playerYPos = screenHeight * 0.75 + 40; // Adjust for player height
+        const meteorXPos = meteor.x._value + 25; // Adjust for meteor width
+        const meteorYPos = meteor.y._value + 25; // Adjust for meteor height
+        const dx = meteorXPos - playerXPos;
+        const dy = meteorYPos - playerYPos;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance < 50) {
+        if (distance < 50) { // Adjust collision threshold if necessary
           explosionSound.current.setPositionAsync(0);
           explosionSound.current.playAsync();
           setHealth((prev) => {
-            const newHealth = prev - 20;
-            if (newHealth <= 0) {
-              setGameOver(true);
-            }
+            const newHealth = prev - 1;
+            if (newHealth <= 0) setGameOver(true);
             return newHealth;
           });
         }
@@ -203,9 +153,29 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
     }, 100);
 
     return () => clearInterval(collisionInterval);
-  }, [meteorPositionsState, gameOver]);
+  }, [meteorPositions, gameOver, playerPos]); // Added playerPos as a dependency
 
-  // Move player left or right
+  useEffect(() => {
+    const loadHighScore = async () => {
+      try {
+        const savedHighScore = await AsyncStorage.getItem('highScore');
+        if (savedHighScore !== null) {
+          setHighScore(parseInt(savedHighScore, 10));
+        }
+      } catch (error) {
+        console.error('Error loading high score:', error);
+      }
+    };
+    loadHighScore();
+  }, []);
+
+  useEffect(() => {
+    if (score > highScore) {
+      setHighScore(score);
+      AsyncStorage.setItem('highScore', score.toString());
+    }
+  }, [score, highScore]);
+
   const movePlayer = (direction) => {
     if (gameOver) return;
 
@@ -216,6 +186,7 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
           ? Math.max(0, currentValue - moveStep)
           : Math.min(screenWidth - 60, currentValue + moveStep);
       playerPos.current = newX;
+
       Animated.timing(playerX, {
         toValue: newX,
         duration: 100,
@@ -225,7 +196,6 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
     });
   };
 
-  // Restart game: reset meteors, player position, score, health, and restart background music.
   const handleRestart = () => {
     meteorPositions.forEach((meteor) => {
       meteor.setValue({
@@ -235,67 +205,39 @@ const GameComponent = ({ playerImage, meteorImage, onRestart }) => {
     });
     playerX.setValue(screenWidth / 2 - 30);
     playerPos.current = screenWidth / 2 - 30;
-    setHealth(100);
+    setHealth(100); // Ensure health is reset to 100
     setScore(0);
     setGameOver(false);
-    backgroundMusic.current.replayAsync();
   };
 
+  console.log("num-metoers: ", meteorPositions.length);
   return (
     <View style={styles.container}>
       {meteorPositions.map((meteor, index) => (
         <Animated.Image
-          key={index}
+          key={index} // Use a stable key
           source={meteorImage}
-          style={[
-            styles.meteor,
-            {
-              transform: [
-                { translateX: meteor.x },
-                { translateY: meteor.y },
-              ],
-            },
-          ]}
+          style={[styles.meteor, { transform: [{ translateX: meteor.x }, { translateY: meteor.y }], zIndex: 1 }]}
         />
       ))}
-      <Animated.Image
-        source={playerImage}
-        style={[styles.player, { left: playerX }]}
-      />
+      <Animated.Image source={playerImage} style={[styles.player, { left: playerX, zIndex: 0 }]} />
       <View style={styles.controls}>
-        <TouchableOpacity
-          onPress={() => movePlayer('left')}
-          style={styles.controlButton}
-        >
+        <TouchableOpacity onPress={() => movePlayer('left')} style={styles.controlButton}>
           <Text style={styles.controlText}>◀</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => movePlayer('right')}
-          style={styles.controlButton}
-        >
+        <TouchableOpacity onPress={() => movePlayer('right')} style={styles.controlButton}>
           <Text style={styles.controlText}>▶</Text>
         </TouchableOpacity>
       </View>
+      <Text style={styles.score}>Score: {score}</Text>
+      <Text style={styles.health}>Health: {health}%</Text>
+      <Text style={styles.highScore}>High Score: {highScore}</Text>
       {gameOver && (
         <View style={styles.overlay}>
-          <TouchableOpacity
-            style={styles.gameOverContainer}
-            onPress={handleRestart}
-          >
-            <Text style={styles.gameOverText}>Game Over</Text>
-            <Text style={styles.finalScore}>Final Score: {score}</Text>
-            <Text style={styles.tapToRestart}>Tap to Restart</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.goHomeButton} onPress={onRestart}>
-            <Text style={styles.goHomeText}>Go Home</Text>
-          </TouchableOpacity>
+          <TouchableOpacity onPress={handleRestart}><Text>Restart</Text></TouchableOpacity>
+          <TouchableOpacity onPress={onRestart}><Text>Go Home</Text></TouchableOpacity>
         </View>
       )}
-      <View style={styles.scoreContainer}>
-        <Text style={styles.score}>Score: {score}</Text>
-        <Text style={styles.health}>Health: {health}</Text>
-        <Text style={styles.highScore}>High Score: {highScore}</Text>
-      </View>
     </View>
   );
 };
@@ -304,57 +246,35 @@ const styles = StyleSheet.create({
   container: { flex: 1, overflow: 'hidden' },
   meteor: { position: 'absolute', width: 50, height: 50 },
   player: { position: 'absolute', bottom: '25%', width: 60, height: 80 },
-  controls: {
-    position: 'absolute',
-    bottom: 50,
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  controlButton: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    padding: 20,
-    borderRadius: 10,
-  },
+  controls: { position: 'absolute', bottom: 50, width: '100%', flexDirection: 'row', justifyContent: 'space-around' },
+  controlButton: { backgroundColor: 'rgba(255,255,255,0.3)', padding: 20, borderRadius: 10 },
   controlText: { fontSize: 24, color: 'white' },
-  scoreContainer: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-  },
-  score: { fontSize: 24, fontWeight: 'bold', color: '#ffd700' },
-  health: { fontSize: 24, fontWeight: 'bold', color: 'red' },
-  highScore: { fontSize: 24, fontWeight: 'bold', color: '#ff8c00' },
-  overlay: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  gameOverContainer: {
-    padding: 30,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    alignItems: 'center',
+  score: { position: 'absolute', top: 20, right: 20, fontSize: 24, fontWeight: 'bold', color: '#ffd700' },
+  health: { position: 'absolute', top: 20, left: 20, fontSize: 24, fontWeight: 'bold', color: 'red' },
+  highScore: { position: 'absolute', top: 60, right: 20, fontSize: 24, fontWeight: 'bold', color: '#ff8c00' },
+  overlay: { position: 'absolute', width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
+  gameOverContainer: { 
+    padding: 30, 
+    borderRadius: 10, 
+    backgroundColor: '#fff', 
+    alignItems: 'center'
   },
   gameOverText: { fontSize: 30, fontWeight: 'bold', color: 'red' },
   finalScore: { fontSize: 24, fontWeight: 'bold', marginTop: 10 },
   tapToRestart: { marginTop: 10, fontSize: 16, color: 'gray' },
-  goHomeButton: {
-    marginTop: 20,
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+  goHomeButton: { 
+    marginTop: 20, 
+    backgroundColor: '#007AFF', 
+    paddingHorizontal: 20, 
+    paddingVertical: 10, 
     borderRadius: 10,
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 5,
-    elevation: 5,
+    elevation: 5
   },
   goHomeText: { fontSize: 18, color: '#fff' },
 });
 
-export default GameComponent;
+export default React.memo(GameComponent);

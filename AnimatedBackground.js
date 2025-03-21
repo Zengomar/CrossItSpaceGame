@@ -3,7 +3,7 @@ import { Animated, Dimensions, StyleSheet, View, Easing } from 'react-native';
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
-const AnimatedBackground = ({ backgroundImage }) => {
+const AnimatedBackground = React.memo(({ backgroundImage }) => {
   const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -13,12 +13,12 @@ const AnimatedBackground = ({ backgroundImage }) => {
           toValue: screenHeight,
           duration: 5000,
           easing: Easing.linear,
-          useNativeDriver: false, // Fallback to false
+          useNativeDriver: true, // Changed to true
         }),
         Animated.timing(scrollY, {
           toValue: 0,
           duration: 0,
-          useNativeDriver: false, // Fallback to false
+          useNativeDriver: true, // Changed to true
         }),
       ])
     ).start();
@@ -41,7 +41,7 @@ const AnimatedBackground = ({ backgroundImage }) => {
       />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

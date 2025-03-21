@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, ImageBackground } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const HomeScreen = ({ onStart }) => {
+const HomeScreen = React.memo(({ onStart }) => {
   const [highScore, setHighScore] = useState(0);
-  const [lastScore, setLastScore] = useState(0);
 
   useEffect(() => {
     const loadScores = async () => {
@@ -30,7 +29,7 @@ const HomeScreen = ({ onStart }) => {
       </View>
     </ImageBackground>
   );
-};
+});
 
 const styles = StyleSheet.create({
   background: {
@@ -39,7 +38,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   container: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',

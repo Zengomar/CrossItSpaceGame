@@ -1,11 +1,10 @@
-import React, {Suspense , useState , useEffect} from 'react';
-import { I18nManager } from 'react-native';
-import { View } from 'react-native';
-const HomeScreen = React.lazy(() => import('./HomeScreen'));
-const GameScreen = React.lazy(() => import('./GameScreen'));
+import React, { Suspense, lazy, useState, useEffect } from 'react';
+import { I18nManager, Text, View } from 'react-native';
+
+const HomeScreen = lazy(() => import('./HomeScreen'));
+const GameScreen = lazy(() => import('./GameScreen'));
 
 const App = () => {
-
   useEffect(() => {
     I18nManager.forceRTL(false);
     I18nManager.allowRTL(false);
